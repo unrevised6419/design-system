@@ -1,17 +1,24 @@
 import * as React from 'react';
-import { useId } from 'react';
 
-import { composeEventHandlers } from '@radix-ui/primitive';
-import { useComposedRefs } from '@radix-ui/react-compose-refs';
-import { createContext } from '@radix-ui/react-context';
-import { DismissableLayer } from '@radix-ui/react-dismissable-layer';
-import { useFocusGuards } from '@radix-ui/react-focus-guards';
-import { FocusScope } from '@radix-ui/react-focus-scope';
-import * as PopperPrimitive from '@radix-ui/react-popper';
-import { Portal as PortalPrimitive } from '@radix-ui/react-portal';
-import { Primitive } from '@radix-ui/react-primitive';
-import { useControllableState } from '@radix-ui/react-use-controllable-state';
-import { useLayoutEffect } from '@radix-ui/react-use-layout-effect';
+import { Portal as RadixPortal } from 'radix-ui';
+import {
+  Context,
+  DismissableLayer as DismissableLayerPrimitive,
+  FocusGuards,
+  FocusScope as FocusScopePrimitive,
+  Popper as PopperPrimitive,
+  Primitive,
+  composeEventHandlers,
+  useComposedRefs,
+  useControllableState,
+  useLayoutEffect,
+} from 'radix-ui/internal';
+
+const PortalPrimitive = RadixPortal.Portal;
+const DismissableLayer = DismissableLayerPrimitive.DismissableLayer;
+const FocusScope = FocusScopePrimitive.FocusScope;
+const createContext = Context.createContext;
+const useFocusGuards = FocusGuards.useFocusGuards;
 import { hideOthers } from 'aria-hidden';
 import * as ReactDOM from 'react-dom';
 import { RemoveScroll } from 'react-remove-scroll';
@@ -21,8 +28,6 @@ import { usePrev } from '../../hooks/usePrev';
 import { createCollection } from '../Collection';
 
 import { VirtualizedViewport } from './VirtualizedViewport';
-
-import type { ComponentPropsWithoutRef } from '@radix-ui/react-primitive';
 
 const OPEN_KEYS = [' ', 'Enter', 'ArrowUp', 'ArrowDown'];
 const SELECTION_KEYS = ['Enter'];
@@ -200,26 +205,30 @@ const Combobox = (props: RootProps) => {
    */
   const [open = false, setOpen] = useControllableState({
     prop: openProp,
-    defaultProp: defaultOpen,
+    defaultProp: defaultOpen ?? false,
     onChange: onOpenChange,
+    caller: COMBOBOX_NAME,
   });
-  const [value, setValue] = useControllableState({
+  const [value, setValue] = useControllableState<string | undefined>({
     prop: valueProp,
     defaultProp: defaultValue,
-    onChange: onValueChange,
+    onChange: onValueChange as ((value: string | undefined) => void) | undefined,
+    caller: COMBOBOX_NAME,
   });
   const [textValue, setTextValue] = useControllableState({
     prop: textValueProp,
-    defaultProp: allowCustomValue && !defaultTextValue ? valueProp : defaultTextValue,
+    defaultProp: (allowCustomValue && !defaultTextValue ? valueProp : defaultTextValue) as string,
     onChange: onTextValueChange,
+    caller: COMBOBOX_NAME,
   });
-  const [filterValue, setFilterValue] = useControllableState({
+  const [filterValue, setFilterValue] = useControllableState<string | undefined>({
     prop: filterValueProp,
     defaultProp: defaultFilterValue,
-    onChange: onFilterValueChange,
+    onChange: onFilterValueChange as ((value: string | undefined) => void) | undefined,
+    caller: COMBOBOX_NAME,
   });
 
-  const id = useId();
+  const id = React.useId();
 
   const focusFirst: ComboboxContextValue['focusFirst'] = React.useCallback(
     (candidates, items) => {
@@ -679,7 +688,7 @@ ComboxboxTextInput.displayName = 'ComboboxTextInput';
  * -----------------------------------------------------------------------------------------------*/
 
 type ComboboxIconElement = React.ElementRef<typeof Primitive.button>;
-type PrimitiveButtonProps = ComponentPropsWithoutRef<typeof Primitive.button>;
+type PrimitiveButtonProps = React.ComponentPropsWithoutRef<typeof Primitive.button>;
 type IconProps = PrimitiveButtonProps;
 
 const ComboboxIcon = React.forwardRef<ComboboxIconElement, IconProps>((props, forwardedRef) => {
@@ -943,7 +952,7 @@ ComboboxPopperPosition.displayName = 'ComboboxPopperPosition';
 const VIEWPORT_NAME = 'ComboboxViewport';
 
 type ComboboxViewportElement = React.ElementRef<typeof Primitive.div>;
-type PrimitiveDivProps = ComponentPropsWithoutRef<typeof Primitive.div>;
+type PrimitiveDivProps = React.ComponentPropsWithoutRef<typeof Primitive.div>;
 type ViewportProps = PrimitiveDivProps;
 
 const ComboboxViewport = React.forwardRef<ComboboxViewportElement, ViewportProps>((props, forwardedRef) => {
@@ -1043,7 +1052,7 @@ export const ComboboxItem = React.forwardRef<ComboboxItemElement, ItemProps>((pr
 
   const { onTextValueChange, textValue: contextTextValue, ...context } = useComboboxContext(ITEM_NAME);
 
-  const textId = useId();
+  const textId = React.useId();
 
   const [textValue, setTextValue] = React.useState(textValueProp ?? '');
 
@@ -1170,7 +1179,7 @@ const ComboboxItemImpl = React.forwardRef<ComboboxItemImplElement, ItemImplProps
     return visuallyFocussedItem === getItems().find((item) => item.ref.current === itemRef.current)?.ref.current;
   }, [getItems, visuallyFocussedItem]);
 
-  const id = useId();
+  const id = React.useId();
 
   return (
     <Primitive.div
@@ -1199,7 +1208,7 @@ ComboboxItemImpl.displayName = ITEM_IMPL_NAME;
 
 const ITEM_TEXT_NAME = 'ComboboxItemText';
 
-type PrimitiveSpanProps = ComponentPropsWithoutRef<typeof Primitive.span>;
+type PrimitiveSpanProps = React.ComponentPropsWithoutRef<typeof Primitive.span>;
 type ItemTextProps = PrimitiveSpanProps;
 
 const ComboboxItemText = React.forwardRef<HTMLSpanElement, ItemTextProps>((props, forwardedRef) => {
@@ -1318,7 +1327,7 @@ const ComboboxCreateItem = React.forwardRef<ComboboxItemElement, CreateItemProps
     return visuallyFocussedItem === getItems().find((item) => item.ref.current === itemRef.current)?.ref.current;
   }, [getItems, visuallyFocussedItem]);
 
-  const id = useId();
+  const id = React.useId();
 
   const handleSelect = () => {
     if (!disabled && textValue) {

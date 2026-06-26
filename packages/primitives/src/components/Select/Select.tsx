@@ -13,33 +13,41 @@
  */
 
 import * as React from 'react';
-import { type ComponentPropsWithoutRef, useId } from 'react';
 
-import { clamp } from '@radix-ui/number';
-import { composeEventHandlers } from '@radix-ui/primitive';
-import { createCollection } from '@radix-ui/react-collection';
-import { useComposedRefs } from '@radix-ui/react-compose-refs';
-import { createContextScope } from '@radix-ui/react-context';
-import { useDirection } from '@radix-ui/react-direction';
-import { DismissableLayer } from '@radix-ui/react-dismissable-layer';
-import { useFocusGuards } from '@radix-ui/react-focus-guards';
-import { FocusScope } from '@radix-ui/react-focus-scope';
-import * as PopperPrimitive from '@radix-ui/react-popper';
-import { createPopperScope } from '@radix-ui/react-popper';
-import { Portal as PortalPrimitive } from '@radix-ui/react-portal';
-import { Primitive } from '@radix-ui/react-primitive';
-import { Slot } from '@radix-ui/react-slot';
-import { useControllableState } from '@radix-ui/react-use-controllable-state';
-import { useLayoutEffect } from '@radix-ui/react-use-layout-effect';
+import { Direction, Portal as RadixPortal, Slot as SlotPrimitive, VisuallyHidden as VisuallyHiddenPrimitive } from 'radix-ui';
+import {
+  Collection as CollectionPrimitive,
+  Context,
+  DismissableLayer as DismissableLayerPrimitive,
+  FocusGuards,
+  FocusScope as FocusScopePrimitive,
+  Popper as PopperPrimitive,
+  Primitive,
+  composeEventHandlers,
+  useComposedRefs,
+  useControllableState,
+  useLayoutEffect,
+} from 'radix-ui/internal';
 import { usePrevious } from '@radix-ui/react-use-previous';
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+
+const clamp = (value: number, [min, max]: [number, number]): number => Math.min(max, Math.max(min, value));
+const createCollection = CollectionPrimitive.createCollection;
+const createContextScope = Context.createContextScope;
+const createPopperScope = PopperPrimitive.createPopperScope;
+const useDirection = Direction.useDirection;
+const useFocusGuards = FocusGuards.useFocusGuards;
+const DismissableLayer = DismissableLayerPrimitive.DismissableLayer;
+const FocusScope = FocusScopePrimitive.FocusScope;
+const PortalPrimitive = RadixPortal.Portal;
+const Slot = SlotPrimitive.Slot;
+const VisuallyHidden = VisuallyHiddenPrimitive.VisuallyHidden;
 import { hideOthers } from 'aria-hidden';
 import * as ReactDOM from 'react-dom';
 import { RemoveScroll } from 'react-remove-scroll';
 
 import { useCallbackRef } from '../../hooks/useCallbackRef';
 
-import type { Scope } from '@radix-ui/react-context';
+type Scope = Context.Scope;
 
 type Direction = 'ltr' | 'rtl';
 
@@ -144,13 +152,14 @@ const Select = (props: ScopedProps<SelectProps>) => {
   const direction = useDirection(dir);
   const [open = false, setOpen] = useControllableState({
     prop: openProp,
-    defaultProp: defaultOpen,
+    defaultProp: defaultOpen ?? false,
     onChange: onOpenChange,
+    caller: SELECT_NAME,
   });
 
   const [value, setValue] = useControllableState<string | string[]>({
     prop: valueProp,
-    defaultProp: defaultValue,
+    defaultProp: defaultValue as string | string[],
     onChange(value: string | string[]) {
       if (onValueChange) {
         if (Array.isArray(value)) {
@@ -189,7 +198,7 @@ const Select = (props: ScopedProps<SelectProps>) => {
         onValueNodeChange={setValueNode}
         valueNodeHasChildren={valueNodeHasChildren}
         onValueNodeHasChildrenChange={setValueNodeHasChildren}
-        contentId={useId()}
+        contentId={React.useId()}
         value={value}
         onValueChange={setValue}
         open={open}
@@ -248,7 +257,7 @@ Select.displayName = SELECT_NAME;
 const TRIGGER_NAME = 'SelectTrigger';
 
 type SelectTriggerElement = React.ElementRef<typeof Primitive.div>;
-type PrimitiveButtonProps = ComponentPropsWithoutRef<typeof Primitive.div>;
+type PrimitiveButtonProps = React.ComponentPropsWithoutRef<typeof Primitive.div>;
 type SelectTriggerProps = PrimitiveButtonProps;
 
 const SelectTrigger = React.forwardRef<SelectTriggerElement, SelectTriggerProps>(
@@ -373,7 +382,7 @@ SelectTrigger.displayName = TRIGGER_NAME;
 const VALUE_NAME = 'SelectValue';
 
 type SelectValueElement = React.ElementRef<typeof Primitive.span>;
-type PrimitiveSpanProps = ComponentPropsWithoutRef<typeof Primitive.span>;
+type PrimitiveSpanProps = React.ComponentPropsWithoutRef<typeof Primitive.span>;
 type SelectValueRenderFn = {
   ({ value, textValue }: { value?: string; textValue?: string }): React.ReactNode;
   (value?: string): React.ReactNode;
@@ -576,7 +585,7 @@ const CONTENT_IMPL_NAME = 'SelectContentImpl';
 
 type SelectContentImplElement = SelectPopperPositionElement | SelectItemAlignedPositionElement;
 type DismissableLayerProps = React.ComponentPropsWithoutRef<typeof DismissableLayer>;
-type FocusScopeProps = ComponentPropsWithoutRef<typeof FocusScope>;
+type FocusScopeProps = React.ComponentPropsWithoutRef<typeof FocusScope>;
 
 type SelectPopperPrivateProps = { onPlaced?: PopperContentProps['onPlaced'] };
 
@@ -1165,7 +1174,7 @@ const [SelectViewportProvider, useSelectViewportContext] = createSelectContext<S
 const VIEWPORT_NAME = 'SelectViewport';
 
 type SelectViewportElement = React.ElementRef<typeof Primitive.div>;
-type PrimitiveDivProps = ComponentPropsWithoutRef<typeof Primitive.div>;
+type PrimitiveDivProps = React.ComponentPropsWithoutRef<typeof Primitive.div>;
 type SelectViewportProps = PrimitiveDivProps;
 
 const SelectViewport = React.forwardRef<SelectViewportElement, SelectViewportProps>(
@@ -1255,7 +1264,7 @@ type SelectGroupProps = PrimitiveDivProps;
 const SelectGroup = React.forwardRef<SelectGroupElement, SelectGroupProps>(
   (props: ScopedProps<SelectGroupProps>, forwardedRef) => {
     const { __scopeSelect, ...groupProps } = props;
-    const groupId = useId();
+    const groupId = React.useId();
 
     return (
       <SelectGroupContextProvider scope={__scopeSelect} id={groupId}>
@@ -1330,7 +1339,7 @@ const SelectItem = React.forwardRef<SelectItemElement, SelectItemProps>(
     const composedRefs = useComposedRefs(forwardedRef, (node) =>
       contentContext.itemRefCallback?.(node, value, disabled),
     );
-    const textId = useId();
+    const textId = React.useId();
 
     const handleSelect = () => {
       if (!disabled) {
@@ -1703,7 +1712,7 @@ SelectSeparator.displayName = SEPARATOR_NAME;
 const ARROW_NAME = 'SelectArrow';
 
 type SelectArrowElement = React.ElementRef<typeof PopperPrimitive.Arrow>;
-type PopperArrowProps = ComponentPropsWithoutRef<typeof PopperPrimitive.Arrow>;
+type PopperArrowProps = React.ComponentPropsWithoutRef<typeof PopperPrimitive.Arrow>;
 type SelectArrowProps = PopperArrowProps;
 
 const SelectArrow = React.forwardRef<SelectArrowElement, SelectArrowProps>(
